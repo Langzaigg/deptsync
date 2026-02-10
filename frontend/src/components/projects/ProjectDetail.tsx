@@ -640,6 +640,45 @@ const ProjectDetail: React.FC = () => {
     }
   };
 
+  const handleExportTimeline = async () => {
+    if (!project) return;
+    try {
+      const blob = await projectsApi.exportTimeline(project.id);
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      const dateStr = formatBeijingDate(new Date().toISOString()).replace(/-/g, '');
+      link.download = `timeline_${project.title}_${dateStr}.docx`;
+      document.body.appendChild(link);
+      link.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(link);
+    } catch (e) {
+      console.error("Export failed", e);
+      alert("导出失败，请重试");
+    }
+  };
+
+  const handleExportEvent = async (event: TimelineEvent) => {
+    try {
+      const blob = await eventsApi.export(event.id);
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      // Extract date part only for filename
+      const dateStr = typeof event.date === 'string' ? event.date.split('T')[0].replace(/-/g, '') : new Date(event.date).toISOString().split('T')[0].replace(/-/g, '');
+      const safeAuthor = event.authorName || 'unknown';
+      link.download = `event_${safeAuthor}_${dateStr}.docx`;
+      document.body.appendChild(link);
+      link.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(link);
+    } catch (e) {
+      console.error("Export failed", e);
+      alert("导出失败，请重试");
+    }
+  };
+
   return (
     <div className="space-y-6">
       <Link to="/projects" className="inline-flex items-center text-slate-500 hover:text-brand-600 transition-colors">
@@ -742,6 +781,12 @@ const ProjectDetail: React.FC = () => {
       {activeTab === 'TIMELINE' && (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2 space-y-6">
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-bold text-slate-800">项目动态</h3>
+              <button onClick={handleExportTimeline} className="flex items-center gap-1 text-sm text-slate-500 hover:text-brand-600">
+                <Download size={16} /> 导出时间轴
+              </button>
+            </div>
             <div className="relative border-l-2 border-slate-200 ml-4 pl-8 space-y-8">
               {isMember && (
                 <div className="relative">
@@ -809,6 +854,9 @@ const ProjectDetail: React.FC = () => {
                         </div>
                         <div className="flex items-center gap-2">
                           <span className="text-[10px] px-2 py-0.5 rounded-full border bg-slate-50">{getEventLabel(event.type)}</span>
+                          <button onClick={() => handleExportEvent(event)} className="text-slate-300 hover:text-brand-500" title="导出Word">
+                            <Download size={14} />
+                          </button>
                           {canEdit && !isEditing && (
                             <button onClick={() => startEditEvent(event)} className="text-slate-300 hover:text-brand-500">
                               <Edit2 size={14} />

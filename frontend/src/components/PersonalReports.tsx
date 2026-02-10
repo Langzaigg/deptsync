@@ -225,16 +225,23 @@ const PersonalReports: React.FC = () => {
     }
   };
 
-  const handleSingleExport = (report: WeeklyReport) => {
-    const exportContent = `员工: ${report.username}\n提交日期: ${formatToBeijingTime(report.createdAt)}\n内容:\n${report.content}`;
-    const blob = new Blob([exportContent], { type: 'text/plain;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `report_${report.username}.txt`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+  const handleSingleExport = async (report: WeeklyReport) => {
+    try {
+      const blob = await reportsApi.export(report.id);
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      // Filename is handled by browser/backend negotiation, but setting download attribute helps
+      const dateStr = formatBeijingDate(report.createdAt).replace(/-/g, '');
+      link.download = `report_${report.username}_${dateStr}.docx`;
+      document.body.appendChild(link);
+      link.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(link);
+    } catch (e) {
+      console.error("Export failed", e);
+      alert("导出失败，请重试");
+    }
   };
 
   const isImage = (url: string) => {

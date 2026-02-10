@@ -202,6 +202,19 @@ export const projectsApi = {
   create: (data: any) => api.post<any>('/projects', data),
   update: (id: string, data: any) => api.put<any>(`/projects/${id}`, data),
   delete: (id: string) => api.delete<any>(`/projects/${id}`),
+  exportTimeline: async (id: string, eventIds: string[] = []) => {
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    if (accessToken) headers['Authorization'] = `Bearer ${accessToken}`;
+
+    const response = await fetch(`${API_BASE}/projects/${id}/timeline/export`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(eventIds),
+    });
+
+    if (!response.ok) throw new Error('Export failed');
+    return response.blob();
+  },
 };
 
 // Tasks API
@@ -222,6 +235,31 @@ export const reportsApi = {
   },
   create: (data: any) => api.post<any>('/reports', data),
   delete: (id: string) => api.delete<any>(`/reports/${id}`),
+  export: async (id: string) => {
+    const headers: Record<string, string> = {};
+    if (accessToken) headers['Authorization'] = `Bearer ${accessToken}`;
+
+    const response = await fetch(`${API_BASE}/reports/${id}/export`, {
+      method: 'GET',
+      headers,
+    });
+
+    if (!response.ok) throw new Error('Export failed');
+    return response.blob();
+  },
+  batchExport: async (ids: string[]) => {
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    if (accessToken) headers['Authorization'] = `Bearer ${accessToken}`;
+
+    const response = await fetch(`${API_BASE}/reports/batch-export`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(ids),
+    });
+
+    if (!response.ok) throw new Error('Export failed');
+    return response.blob();
+  },
 };
 
 export const inspirationsApi = {
@@ -242,6 +280,18 @@ export const eventsApi = {
   create: (data: any) => api.post<any>('/events', data),
   update: (id: string, data: any) => api.put<any>(`/events/${id}`, data),
   delete: (id: string) => api.delete<any>(`/events/${id}`),
+  export: async (id: string) => {
+    const headers: Record<string, string> = {};
+    if (accessToken) headers['Authorization'] = `Bearer ${accessToken}`;
+
+    const response = await fetch(`${API_BASE}/events/${id}/export`, {
+      method: 'GET',
+      headers,
+    });
+
+    if (!response.ok) throw new Error('Export failed');
+    return response.blob();
+  },
 };
 
 // LLM Services

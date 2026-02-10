@@ -1,4 +1,5 @@
 import uuid
+from urllib.parse import quote
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from typing import List, Optional
@@ -82,3 +83,77 @@ async def delete_report(
     db.delete(report)
     db.commit()
     return {"message": "Report deleted"}
+
+
+@router.get("/{report_id}/export")
+async def export_report(
+    report_id: str,
+    db: Session = Depends(get_db),
+    # current_user: User = Depends(get_current_user)
+):
+    """Export a single report to DOCX."""
+    from fastapi.responses import StreamingResponse
+    from ..services.docx_service import generate_report_docx
+    
+    report = db.query(WeeklyReport).filter(WeeklyReport.id == report_id).first()
+    if not report:
+        raise HTTPException(status_code=404, detail="Report not found")
+    
+    # Serialize via Pydantic to ensure all fields/relationships are loaded
+    report_dto = ReportResponse.model_validate(report)
+    report_data = report_dto.model_dump()
+    
+    file_stream = generate_report_docx(report_data)
+    
+    # Safe filename
+    date_str = report.created_at.strftime('%Y%m%d')
+    filename = f"report_{report.username}_{date_str}.docx"
+    filename_encoded = quote(filename)
+    
+    return StreamingResponse(
+        file_stream,
+        media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        headers={"Content-Disposition": f"attachment; filename*=utf-8''{filename_encoded}"}
+    )
+
+
+@router.post("/batch-export")
+async def batch_export_reports(
+    report_ids: List[str],
+    db: Session = Depends(get_db),
+    # current_user: User = Depends(get_current_user)
+):
+    """Export multiple reports as a ZIP file containing DOCX files."""
+    from fastapi.responses import StreamingResponse
+    from ..services.docx_service import generate_report_docx
+    import zipfile
+    from io import BytesIO
+    from fastapi.encoders import jsonable_encoder
+    
+    reports = db.query(WeeklyReport).filter(WeeklyReport.id.in_(report_ids)).all()
+    if not reports:
+        raise HTTPException(status_code=404, detail="No reports found")
+        
+    zip_buffer = BytesIO()
+    with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED) as zip_file:
+        for report in reports:
+            report_dto = ReportResponse.model_validate(report)
+            report_data = report_dto.model_dump()
+            
+            docx_stream = generate_report_docx(report_data)
+            
+            date_str = report.created_at.strftime('%Y%m%d')
+            filename = f"report_{report.username}_{date_str}.docx"
+            
+            # Handle duplicate filenames
+            if filename in zip_file.namelist():
+                filename = f"report_{report.username}_{date_str}_{report.id[:4]}.docx"
+
+            zip_file.writestr(filename, docx_stream.getvalue())
+            
+    zip_buffer.seek(0)
+    return StreamingResponse(
+        zip_buffer,
+        media_type="application/zip",
+        headers={"Content-Disposition": "attachment; filename=reports_batch.zip"}
+    )

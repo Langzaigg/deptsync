@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from typing import Optional, List
 from datetime import datetime
 from .event import AttachmentSchema, AttachmentCreate, AttachmentResponse
@@ -9,6 +9,8 @@ class ReportDetailSchema(BaseModel):
     project_title: str
     content: Optional[str] = None
     plan: Optional[str] = None
+
+    model_config = ConfigDict(from_attributes=True)
 
 
 class ReportBase(BaseModel):
@@ -21,6 +23,8 @@ class ReportBase(BaseModel):
     linked_inspiration_ids: List[str] = []
     attachments: List[AttachmentSchema] = []
     created_at: datetime
+    
+    model_config = ConfigDict(from_attributes=True)
 
 
 class ReportCreate(BaseModel):
@@ -36,5 +40,4 @@ class ReportResponse(ReportBase):
     id: str
     attachments: List[AttachmentResponse] = []
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)

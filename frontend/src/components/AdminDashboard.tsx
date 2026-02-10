@@ -1,10 +1,12 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { useAuth } from '../App';
 import ReactMarkdown from 'react-markdown';
 import { UserRole, User, WeeklyReport, Project, TaskAssignment, Attachment } from '../types';
 import { usersApi, reportsApi, projectsApi, tasksApi, eventsApi, llmApi } from '../services/api';
 import { Shield, Users, FileText, Search, Download, Square, CheckSquare, BarChart3, PieChart, Sparkles, Loader2, LayoutDashboard, Edit2, Key, CheckCircle, AlertCircle, TrendingUp, Filter, Trello, Calendar, X, File, Paperclip, MonitorPlay } from 'lucide-react';
 
 const AdminDashboard: React.FC = () => {
+    const { user: currentUser } = useAuth();
     const [users, setUsers] = useState<User[]>([]);
     const [reports, setReports] = useState<WeeklyReport[]>([]);
     const [projects, setProjects] = useState<Project[]>([]);
@@ -98,6 +100,11 @@ const AdminDashboard: React.FC = () => {
             return;
         }
 
+        if (currentUser && targetUser.id === currentUser.id) {
+            alert("无法降低自己的权限");
+            return;
+        }
+
         // Ensure we have the latest user state (fetched in refreshData)
         const freshUser = users.find(u => u.id === targetUser.id);
 
@@ -173,29 +180,42 @@ const AdminDashboard: React.FC = () => {
     const toggleSelectAll = () => setSelectedReportIds(selectedReportIds.length === filteredReports.length ? [] : filteredReports.map(r => r.id));
     const toggleSelectReport = (id: string) => setSelectedReportIds(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]);
 
-    const handleExport = () => {
+    const handleExport = async () => {
         const reportsToExport = selectedReportIds.length > 0 ? filteredReports.filter(r => selectedReportIds.includes(r.id)) : filteredReports;
         if (reportsToExport.length === 0) { alert("没有可导出的周报"); return; }
-        const exportContent = reportsToExport.map(r => `员工: ${r.username}\n提交日期: ${new Date(r.createdAt).toLocaleString()}\n内容:\n${r.content}\n-----------------------------------\n`).join('\n');
-        const blob = new Blob([exportContent], { type: 'text/plain;charset=utf-8' });
-        const link = document.createElement('a');
-        link.href = URL.createObjectURL(blob);
-        link.download = `weekly_reports_export_${new Date().toISOString().split('T')[0]}.txt`;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
+
+        try {
+            const blob = await reportsApi.batchExport(reportsToExport.map(r => r.id));
+            const url = window.URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `weekly_reports_batch_${new Date().toISOString().split('T')[0]}.zip`;
+            document.body.appendChild(link);
+            link.click();
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(link);
+        } catch (e) {
+            console.error("Batch export failed", e);
+            alert("批量导出失败");
+        }
     };
 
-    const handleSingleExport = (report: WeeklyReport) => {
-        const exportContent = `员工: ${report.username}\n提交日期: ${new Date(report.createdAt).toLocaleString()}\n内容:\n${report.content}`;
-        const blob = new Blob([exportContent], { type: 'text/plain;charset=utf-8' });
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = `report_${report.username}.txt`;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
+    const handleSingleExport = async (report: WeeklyReport) => {
+        try {
+            const blob = await reportsApi.export(report.id);
+            const url = window.URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            const dateStr = new Date(report.createdAt).toISOString().split('T')[0].replace(/-/g, '');
+            link.download = `report_${report.username}_${dateStr}.docx`;
+            document.body.appendChild(link);
+            link.click();
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(link);
+        } catch (e) {
+            console.error("Export failed", e);
+            alert("导出失败");
+        }
     };
 
     const handleGenerateMonthlyReport = async () => {
@@ -203,6 +223,8 @@ const AdminDashboard: React.FC = () => {
             alert("请选择开始和结束日期");
             return;
         }
+
+
         setIsGenerating(true);
 
         const start = new Date(monthlyReportStartDate);
@@ -521,7 +543,7 @@ const AdminDashboard: React.FC = () => {
                                             <td className="px-6 py-4"><span className={`text-xs px-2 py-1 rounded-full font-bold ${u.role === UserRole.ADMIN ? 'bg-purple-100 text-purple-700' : 'bg-slate-100 text-slate-600'}`}>{u.role === UserRole.ADMIN ? '管理员' : '普通员工'}</span></td>
                                             <td className="px-6 py-4 text-right flex justify-end gap-2">
                                                 <button onClick={() => handleEditUser(u)} className="flex items-center gap-1 text-xs bg-white border border-slate-200 hover:bg-slate-50 px-3 py-1.5 rounded transition-colors"><Edit2 size={12} /> 编辑</button>
-                                                {u.id !== 'admin-1' && (
+                                                {u.id !== 'admin-1' && (currentUser?.id !== u.id) && (
                                                     <button onClick={() => handleRoleToggle(u)} className={`flex items-center gap-1 text-xs px-3 py-1.5 rounded transition-colors border ${u.role === UserRole.ADMIN ? 'bg-orange-50 text-orange-700 border-orange-200 hover:bg-orange-100' : 'bg-brand-50 text-brand-700 border-brand-200 hover:bg-brand-100'}`}>
                                                         {u.role === UserRole.ADMIN ? '降级为员工' : '提升为管理员'}
                                                     </button>
