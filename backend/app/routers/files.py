@@ -71,16 +71,20 @@ async def upload(
         
         logger.info(f"Upload: file={original_name}, type={content_type}, category={file_category}, folder={minio_folder}")
         
-        url = upload_file(
+        path = upload_file(
             file_data=file_data,
             original_filename=original_name,
             content_type=content_type,
             folder=minio_folder,
         )
         
-        logger.info(f"Upload success: {url}")
+        # Construct proxy URL
+        url = f"/api/files/content/{path}"
+        
+        logger.info(f"Upload success: path={path}, url={url}")
         return {
-            "url": url,
+            "url": url,   # Proxy URL for immediate display
+            "path": path, # Relative path for DB storage
             "name": original_name,
             "size": file_size,
             "content_type": content_type,
@@ -90,3 +94,25 @@ async def upload(
     except Exception as e:
         logger.error(f"File upload failed: {e}\n{traceback.format_exc()}")
         raise HTTPException(status_code=500, detail=f"文件上传失败: {str(e)}")
+
+
+@router.get("/content/{file_path:path}")
+async def get_file_content(file_path: str):
+    """
+    Proxy endpoint to stream file content from MinIO.
+    """
+    from fastapi.responses import StreamingResponse
+    from ..services.minio_service import get_file_stream
+    import mimetypes
+
+    try:
+        # Get generic mime type based on extension
+        mime_type, _ = mimetypes.guess_type(file_path)
+        if not mime_type:
+            mime_type = "application/octet-stream"
+
+        file_stream = get_file_stream(file_path)
+        return StreamingResponse(file_stream, media_type=mime_type)
+    except Exception as e:
+        logger.error(f"File proxy failed: {e}")
+        raise HTTPException(status_code=404, detail="File not found")

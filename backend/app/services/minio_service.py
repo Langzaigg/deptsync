@@ -97,12 +97,26 @@ def upload_file(
         content_type=content_type,
     )
 
-    # Build public URL
-    protocol = "https" if settings.MINIO_SECURE else "http"
-    url = f"{protocol}://{settings.MINIO_ENDPOINT}/{bucket}/{object_name}"
-
     logger.info(f"✓ Uploaded '{original_filename}' -> {object_name}")
-    return url
+    # Return relative path (object_name) instead of full URL
+    return object_name
+
+
+def get_file_stream(object_name: str):
+    """
+    Get a file stream from MinIO.
+    
+    Returns:
+        MinIO response object (which is a stream)
+    """
+    client = get_minio_client()
+    bucket = settings.MINIO_BUCKET
+    try:
+        response = client.get_object(bucket, object_name)
+        return response
+    except S3Error as e:
+        logger.error(f"✗ Failed to get '{object_name}': {e}")
+        raise
 
 
 def delete_file(object_name: str):

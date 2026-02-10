@@ -117,6 +117,7 @@ export const api = {
 // File upload (multipart/form-data, separate from JSON api)
 export interface FileUploadResponse {
   url: string;
+  path?: string;
   name: string;
   size: number;
   contentType: string;

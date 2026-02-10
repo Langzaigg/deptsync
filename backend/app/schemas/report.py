@@ -1,7 +1,7 @@
 from pydantic import BaseModel
 from typing import Optional, List
 from datetime import datetime
-from .event import AttachmentSchema
+from .event import AttachmentSchema, AttachmentCreate, AttachmentResponse
 
 
 class ReportDetailSchema(BaseModel):
@@ -29,11 +29,12 @@ class ReportCreate(BaseModel):
     details: List[ReportDetailSchema] = []
     linked_project_ids: List[str] = []
     linked_inspiration_ids: List[str] = []
-    attachments: List[AttachmentSchema] = []
+    attachments: List[AttachmentCreate] = []
 
 
 class ReportResponse(ReportBase):
     id: str
+    attachments: List[AttachmentResponse] = []
 
     class Config:
         from_attributes = True
