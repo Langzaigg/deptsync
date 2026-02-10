@@ -4,7 +4,7 @@
 
 ## 技术栈
 
-- **后端**: Python FastAPI + MySQL + LangChain (OpenAI)
+- **后端**: Python FastAPI + MySQL + LangChain (OpenAI) + MinIO
 - **前端**: React + TypeScript + Vite
 - **代理**: 开发环境 Vite 代理 / 生产环境 Node Express 代理
 
@@ -24,12 +24,17 @@ deptsync/
 
 ## 快速开始
 
-### 1. 配置数据库
+### 1. 基础环境准备
+
+- MySQL 5.7+
+- MinIO Object Storage
 
 创建 MySQL 数据库:
 ```sql
 CREATE DATABASE deptsync CHARACTER SET utf8mb4;
 ```
+
+启动 MinIO 服务 (确保 Access Key / Secret Key 与配置一致)。
 
 ### 2. 启动后端
 
@@ -87,6 +92,18 @@ uvicorn app.main:app --host 0.0.0.0 --port 8000
 | OPENAI_API_BASE | OpenAI API 地址 | (空) |
 | OPENAI_API_KEY | OpenAI API 密钥 | - |
 | OPENAI_MODEL | 模型名称 | gpt-4o |
+| MINIO_ENDPOINT | MinIO 地址 | localhost:9000 |
+| MINIO_ACCESS_KEY | MinIO 用户名 | minioadmin |
+| MINIO_SECRET_KEY | MinIO 密码 | minioadmin |
+| MINIO_BUCKET | MinIO 存储桶 | deptsync |
+| MINIO_SECURE | MinIO 是否使用 HTTPS | false |
+
+## 文件存储结构
+
+所有文件存储在 MinIO 中，结构如下：
+
+- **项目附件**: `projects/{项目名}/{图片|文档}/{uuid}_filename`
+- **周报附件**: `reports/{用户名}/{图片|文档}/{uuid}_filename`
 
 ## API 文档
 
