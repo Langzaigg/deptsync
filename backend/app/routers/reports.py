@@ -2,8 +2,8 @@ import uuid
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from typing import List, Optional
-from datetime import datetime
 from ..database import get_db
+from ..utils import now_beijing
 from ..models.report import WeeklyReport, WeeklyReportDetail
 from ..schemas.report import ReportCreate, ReportResponse
 from ..utils.auth import get_current_user
@@ -47,7 +47,7 @@ async def create_report(
         linked_project_ids=report.linked_project_ids,
         linked_inspiration_ids=report.linked_inspiration_ids,
         attachments=[att.model_dump() for att in report.attachments],
-        created_at=datetime.utcnow()
+        created_at=now_beijing()
     )
     db.add(db_report)
     

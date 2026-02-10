@@ -3,6 +3,7 @@ import { HashRouter, Routes, Route, Navigate, useLocation, Link } from 'react-ro
 import { LayoutDashboard, CheckSquare, Lightbulb, FileText, Settings, LogOut, Menu, X, ClipboardCheck, MonitorPlay } from 'lucide-react';
 import { User, UserRole } from './types';
 import { authApi, getToken, setToken, usersApi } from './services/api';
+import { CONFIG } from './config';
 
 // Pages - lazy load
 import ProjectList from './components/projects/ProjectList';
@@ -50,7 +51,7 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
             {/* Sidebar */}
             <aside className={`fixed inset-y-0 left-0 z-50 w-64 bg-slate-900 text-slate-100 transform ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'} md:relative md:translate-x-0 transition-transform duration-200 ease-in-out`}>
                 <div className="p-6 flex items-center justify-between">
-                    <h1 className="text-2xl font-bold tracking-tight text-brand-500">DeptSync</h1>
+                    <h1 className="text-2xl font-bold tracking-tight text-brand-500">{CONFIG.DEPARTMENT_NAME}</h1>
                     <button onClick={() => setMobileMenuOpen(false)} className="md:hidden text-slate-400">
                         <X size={24} />
                     </button>
@@ -89,7 +90,7 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
             {/* Main Content */}
             <main className="flex-1 overflow-auto h-screen flex flex-col">
                 <header className="bg-white border-b border-slate-200 px-6 py-4 md:hidden flex items-center justify-between sticky top-0 z-40">
-                    <h1 className="font-bold text-slate-800">DeptSync</h1>
+                    <h1 className="font-bold text-slate-800">{CONFIG.DEPARTMENT_NAME}</h1>
                     <button onClick={() => setMobileMenuOpen(true)} className="text-slate-600">
                         <Menu size={24} />
                     </button>
@@ -106,6 +107,11 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 const App: React.FC = () => {
     const [user, setUser] = useState<User | null>(null);
     const [loading, setLoading] = useState(true);
+
+    // Set page title from config
+    useEffect(() => {
+        document.title = CONFIG.PAGE_TITLE;
+    }, []);
 
     // On mount, check for existing token and validate
     useEffect(() => {

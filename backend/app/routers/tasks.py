@@ -1,4 +1,5 @@
 import uuid
+from datetime import datetime, timedelta
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from typing import List, Optional
@@ -63,6 +64,21 @@ async def update_task(
         raise HTTPException(status_code=404, detail="Task not found")
     
     update_data = update.model_dump(exclude_unset=True)
+    
+    # Sanitize remarks timestamps
+    if 'remarks' in update_data and update_data['remarks']:
+        for remark in update_data['remarks']:
+            if 'date' in remark:
+                try:
+                    # If date ends with Z (UTC ISO), convert to Beijing Time
+                    if remark['date'].endswith('Z'):
+                        dt = datetime.strptime(remark['date'], "%Y-%m-%dT%H:%M:%S.%fZ")
+                        remark['date'] = (dt + timedelta(hours=8)).strftime("%Y-%m-%d %H:%M:%S")
+                    # If it's already a string but not in our format, leave it or try to parse?
+                    # Ideally we want YYYY-MM-DD HH:MM:SS
+                except ValueError:
+                    pass # Keep original if parsing fails
+
     for key, value in update_data.items():
         setattr(task, key, value)
     

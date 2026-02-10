@@ -1,0 +1,92 @@
+# LLM 提示词配置文件
+# 所有大模型提示词集中配置于此，便于管理和修改
+
+# 部门月度报告
+dept_monthly_report:
+  system: "你是一个部门项目管理专家。请使用中文输出。"
+  user: |
+    请根据以下项目数据，撰写一份《部门项目综述报告》。
+
+    结构要求:
+    1. **总体概况**: 本周期项目总体推进情况、前期任务转化率、重点项目状态。
+    2. **重点项目进展**: 挑选 3-5 个有实质进展或里程碑的项目进行详细描述。
+    3. **资源与协作**: 基于项目动态，分析资源投入情况（如有提到）。
+    4. **风险与预警**: 识别进度停滞或有问题的项目。
+    5. **下步规划建议**: 基于当前状态给出建议。
+
+    输入数据:
+    {context}
+
+# 项目周报（从个人周报汇总）
+project_weekly_report:
+  system: "你是项目负责人。请使用中文输出。"
+  user: |
+    你是项目 "{project_title}" 的负责人。请根据团队成员提交的个人周报，汇总生成本项目的【项目周报】。
+    周期: {week_range}
+
+    团队成员汇报:
+    {team_updates}
+
+    请按照以下模板生成:
+    1. **本周进展**: 整合大家的完成情况，不要简单的罗列，要概括。
+    2. **存在问题**: 提取汇报中提到的困难或阻碍。
+    3. **下周计划**: 整合大家的下周计划。
+    4. **工时概览**: (简要提及大家的主要投入方向)
+
+# 项目进度报告
+project_report:
+  system: "你是一个专业的项目管理助手。请使用中文输出Markdown格式。"
+  user: |
+    请为项目 "{project_title}" 生成一份进度报告。
+    报告周期: {start_date} 至 {end_date}。
+
+    项目基础信息:
+    - 描述: {description}
+    - 当前状态: {status}
+    - 客户: {customer}
+
+    【时间线动态】:
+    {event_text}
+
+    【任务进度概览】:
+    {task_text}
+
+    请按照以下结构生成报告 (Markdown 格式):
+    # {start_date} 至 {end_date} 项目进度报告
+
+    ## 1. 执行摘要
+    [简要总结本周期的核心进展]
+
+    ## 2. 详细进展
+    [结合时间线事件和任务进度进行描述]
+
+    ## 3. 风险与问题
+    [基于标记为 ISSUE 的事件或进度滞后的任务]
+
+    ## 4. 后续计划与建议
+    [基于当前状态的建议]
+
+# 个人周报建议
+personal_report:
+  system: "You are an AI assistant that outputs valid JSON only."
+  user: |
+    You are helping employee "{username}" write their weekly report.
+    Based on the following activity logs, generate a JSON object.
+
+    DATA:
+    {project_context}
+
+    INSPIRATIONS/IDEAS SHARED:
+    {inspiration_context}
+
+    OUTPUT FORMAT (Strict JSON):
+    {{
+       "[PROJECT_ID_1]": {{
+           "content": "Summarize work done...",
+           "plan": "Suggest next steps..."
+       }},
+       "generalSummary": "A brief overall summary of the week."
+    }}
+
+    Language: Chinese (Simplified).
+    Output raw JSON only, no markdown formatting.

@@ -5,6 +5,8 @@ import { useAuth } from '../App';
 import { Calendar, AlertCircle, CheckCircle2, PlayCircle, Clock, ArrowUpCircle, Flame } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
+import { getBeijingISOString } from '../utils/timeUtils';
+
 const MyTaskBoard: React.FC = () => {
     const { user } = useAuth();
     const [tasks, setTasks] = useState<TaskAssignment[]>([]);
@@ -42,7 +44,7 @@ const MyTaskBoard: React.FC = () => {
                 ...task,
                 progress: editingProgress.progress,
                 status: editingProgress.progress === 100 ? 'COMPLETED' : editingProgress.progress > 0 ? 'IN_PROGRESS' : 'PENDING',
-                remarks: editingProgress.remark ? [...task.remarks, { authorId: user.id, authorName: user.username, content: editingProgress.remark, date: new Date().toISOString() }] : task.remarks
+                remarks: editingProgress.remark ? [...task.remarks, { authorId: user.id, authorName: user.username, content: editingProgress.remark, date: getBeijingISOString() }] : task.remarks
             };
             try {
                 await tasksApi.update(updated.id, updated);

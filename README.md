@@ -98,6 +98,16 @@ uvicorn app.main:app --host 0.0.0.0 --port 8000
 | MINIO_BUCKET | MinIO 存储桶 | deptsync |
 | MINIO_SECURE | MinIO 是否使用 HTTPS | false |
 
+### 前端 (.env)
+
+配置位于 `frontend/.env`，构建时注入。
+
+| 变量 | 说明 | 默认值 |
+|------|------|--------|
+| VITE_DEPARTMENT_NAME | 部门/系统名称 | DeptSync |
+| VITE_LOGIN_HINT | 登录页提示信息 (支持 HTML) | (默认管理员提示) |
+| VITE_PAGE_TITLE | 页面标题 | DeptSync - 部门协同管理平台 |
+
 ## 文件存储结构
 
 所有文件存储在 MinIO 中，结构如下：

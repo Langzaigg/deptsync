@@ -2,8 +2,8 @@ import uuid
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from typing import List
-from datetime import datetime
 from ..database import get_db
+from ..utils import now_beijing
 from ..models.inspiration import Inspiration
 from ..schemas.inspiration import InspirationCreate, InspirationUpdate, InspirationResponse
 from ..utils.auth import get_current_user
@@ -32,7 +32,7 @@ async def create_inspiration(
         content=inspiration.content,
         tags=inspiration.tags,
         color=inspiration.color,
-        created_at=datetime.utcnow()
+        created_at=now_beijing()
     )
     db.add(db_inspiration)
     db.commit()

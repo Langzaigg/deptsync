@@ -22,7 +22,7 @@ class EventBase(BaseModel):
 
 
 class EventCreate(EventBase):
-    pass
+    date: Optional[datetime] = None
 
 
 class EventUpdate(BaseModel):

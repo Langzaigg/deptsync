@@ -4,6 +4,7 @@ import { Plus, FileText, Sparkles, Check, Loader2, Download, Briefcase, RefreshC
 import { WeeklyReport, Project, Inspiration, WeeklyReportItem, Attachment } from '../types';
 import { reportsApi, projectsApi, eventsApi, inspirationsApi, tasksApi, llmApi, filesApi } from '../services/api';
 import { useAuth } from '../App';
+import { getBeijingISOString, formatToBeijingTime, formatBeijingDate } from '../utils/timeUtils';
 
 interface PendingAttachment {
   file: File;
@@ -113,7 +114,7 @@ const PersonalReports: React.FC = () => {
       const projectDataPromises = selectedProjectIds.map(async pid => {
         const proj = availableProjects.find(p => p.id === pid)!;
 
-        // Fetch relevant timeline events from last 7 days
+        // Fetch relevant timeline events from last 7 days (Beijing Time)
         const sevenDaysAgo = new Date();
         sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
         const events = await eventsApi.getByProject(pid, sevenDaysAgo.toISOString().split('T')[0]);
@@ -201,13 +202,13 @@ const PersonalReports: React.FC = () => {
       id: Math.random().toString(36).substr(2, 9),
       userId: user.id,
       username: user.username,
-      weekStartDate: new Date().toISOString(),
+      weekStartDate: getBeijingISOString(),
       content: fullContent,
       details: details,
       linkedProjectIds: selectedProjectIds,
       linkedInspirationIds: selectedInspirationIds,
       attachments: finalAttachments,
-      createdAt: new Date().toISOString()
+      createdAt: getBeijingISOString()
     };
 
     try {
@@ -225,7 +226,7 @@ const PersonalReports: React.FC = () => {
   };
 
   const handleSingleExport = (report: WeeklyReport) => {
-    const exportContent = `员工: ${report.username}\n提交日期: ${new Date(report.createdAt).toLocaleString()}\n内容:\n${report.content}`;
+    const exportContent = `员工: ${report.username}\n提交日期: ${formatToBeijingTime(report.createdAt)}\n内容:\n${report.content}`;
     const blob = new Blob([exportContent], { type: 'text/plain;charset=utf-8' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
@@ -270,7 +271,7 @@ const PersonalReports: React.FC = () => {
                     </div>
                     <div>
                       <h3 className="font-bold text-slate-800">周报</h3>
-                      <p className="text-xs text-slate-500">{new Date(report.createdAt).toLocaleDateString()} • 关联 {report.linkedProjectIds.length} 个项目</p>
+                      <p className="text-xs text-slate-500">{formatBeijingDate(report.createdAt)} • 关联 {report.linkedProjectIds.length} 个项目</p>
                     </div>
                   </div>
                   <div className="flex gap-2">

@@ -11,6 +11,7 @@ import {
 import { Project, TimelineEvent, User, TaskAssignment, Attachment, UserRole } from '../../types';
 import { projectsApi, eventsApi, usersApi, tasksApi, reportsApi, llmApi, filesApi } from '../../services/api';
 import { useAuth } from '../../App';
+import { getBeijingISOString, formatToBeijingTime, formatBeijingDate, getBeijingTime } from '../../utils/timeUtils';
 
 interface PendingAttachment {
   file: File;
@@ -33,15 +34,7 @@ const ProjectDetail: React.FC = () => {
 
   // Timeline State
   const [showEventModal, setShowEventModal] = useState(false);
-  const getBeijingTimeString = () => {
-    const now = new Date();
-    return now.getFullYear() + '-' +
-      String(now.getMonth() + 1).padStart(2, '0') + '-' +
-      String(now.getDate()).padStart(2, '0') + ' ' +
-      String(now.getHours()).padStart(2, '0') + ':' +
-      String(now.getMinutes()).padStart(2, '0') + ':' +
-      String(now.getSeconds()).padStart(2, '0');
-  };
+  const getBeijingTimeString = () => formatToBeijingTime(new Date());
 
   const [newEvent, setNewEvent] = useState({
     type: 'UPDATE' as 'UPDATE' | 'MILESTONE' | 'ISSUE' | 'WEEKLY_REPORT' | 'MEETING' | 'DELIVERABLE',
@@ -109,12 +102,12 @@ const ProjectDetail: React.FC = () => {
   }, [id, user]);
 
   useEffect(() => {
-    const end = new Date();
-    const start = new Date();
+    const end = getBeijingTime();
+    const start = new Date(getBeijingTime());
     start.setDate(start.getDate() - 7);
     setReportDateRange({
-      start: start.toISOString().split('T')[0],
-      end: end.toISOString().split('T')[0]
+      start: formatBeijingDate(start),
+      end: formatBeijingDate(end)
     });
   }, []);
 
@@ -243,7 +236,7 @@ const ProjectDetail: React.FC = () => {
             const safeCaption = att.caption.trim().replace(/\s+/g, '_').replace(/[\/\\:*?"<>|]/g, '');
             suffix = safeCaption.length > 30 ? safeCaption.substring(0, 30) : safeCaption;
           } else {
-            const now = new Date();
+            const now = getBeijingTime();
             const timestamp = now.getFullYear().toString() + (now.getMonth() + 1).toString().padStart(2, '0') + now.getDate().toString().padStart(2, '0') + '_' + now.getHours().toString().padStart(2, '0') + now.getMinutes().toString().padStart(2, '0') + now.getSeconds().toString().padStart(2, '0');
             suffix = timestamp;
           }

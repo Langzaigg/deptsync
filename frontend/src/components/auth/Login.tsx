@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useAuth } from '../../App';
 import { UserCheck, Briefcase, Hash, Lock, User as UserIcon, Loader2 } from 'lucide-react';
+import { CONFIG } from '../../config';
 
 const Login: React.FC = () => {
   const { login, register } = useAuth();
@@ -50,7 +51,7 @@ const Login: React.FC = () => {
           <div className="w-16 h-16 bg-brand-500 rounded-2xl flex items-center justify-center text-white mb-4 rotate-3 shadow-lg shadow-brand-200">
             <Briefcase size={32} />
           </div>
-          <h2 className="text-3xl font-bold text-slate-800">DeptSync</h2>
+          <h2 className="text-3xl font-bold text-slate-800">{CONFIG.DEPARTMENT_NAME}</h2>
           <p className="text-slate-500 mt-2 text-center">
             {isRegistering ? '注册部门协作账号' : '欢迎回来，请登录'}
           </p>
@@ -122,9 +123,8 @@ const Login: React.FC = () => {
           </button>
         </div>
 
-        <div className="mt-8 pt-6 border-t border-slate-100 text-xs text-center text-slate-400">
-          默认管理员: 工号 <span className="font-mono bg-slate-100 px-1 rounded">admin</span> / 密码 <span className="font-mono bg-slate-100 px-1 rounded">admin</span>
-        </div>
+        <div className="mt-8 pt-6 border-t border-slate-100 text-xs text-center text-slate-400" dangerouslySetInnerHTML={{ __html: CONFIG.LOGIN_HINT }} />
+
       </div>
     </div>
   );

@@ -3,6 +3,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from typing import List, Optional
 from datetime import datetime
+from ..utils import now_beijing
 from ..database import get_db
 from ..models.event import TimelineEvent
 from ..schemas.event import EventCreate, EventUpdate, EventResponse
@@ -40,7 +41,13 @@ async def create_event(
     """Create a new timeline event."""
     db_event = TimelineEvent(
         id=str(uuid.uuid4()),
-        **event.model_dump()
+        project_id=event.project_id,
+        author_id=event.author_id,
+        author_name=event.author_name,
+        content=event.content,
+        date=now_beijing(),
+        type=event.type,
+        attachments=[att.model_dump() for att in event.attachments]
     )
     db.add(db_event)
     db.commit()
