@@ -1,0 +1,5 @@
+{
+  "name": "DeptSync - 部门项目协同",
+  "description": "一个用于部门项目跟踪、灵感分享和基于 Gemini 自动生成周报的综合内部工具。",
+  "requestFramePermissions": []
+}
