@@ -3,15 +3,32 @@ import { useAuth } from '../App';
 import ReactMarkdown from 'react-markdown';
 import { UserRole, User, WeeklyReport, Project, TaskAssignment, Attachment } from '../types';
 import { usersApi, reportsApi, projectsApi, tasksApi, eventsApi, llmApi } from '../services/api';
+import { useFetchWithCache } from '../hooks/useFetchWithCache';
 import { Shield, Users, FileText, Search, Download, Square, CheckSquare, BarChart3, PieChart, Sparkles, Loader2, LayoutDashboard, Edit2, Key, CheckCircle, AlertCircle, TrendingUp, Filter, Trello, Calendar, X, File, Paperclip, MonitorPlay } from 'lucide-react';
 
 const AdminDashboard: React.FC = () => {
     const { user: currentUser } = useAuth();
-    const [users, setUsers] = useState<User[]>([]);
-    const [reports, setReports] = useState<WeeklyReport[]>([]);
-    const [projects, setProjects] = useState<Project[]>([]);
-    const [tasks, setTasks] = useState<TaskAssignment[]>([]);
+    const fetchDashboardData = async () => {
+        const [users, reports, projects, tasks] = await Promise.all([
+            usersApi.getAll(),
+            reportsApi.getAll(),
+            projectsApi.getAll(),
+            tasksApi.getAll()
+        ]);
+        return { users, reports, projects, tasks };
+    };
 
+    const { data: dashboardData, loading, refetch: refreshData } = useFetchWithCache(
+        'admin_dashboard_data',
+        fetchDashboardData
+    );
+
+    const users = dashboardData?.users || [];
+    const reports = dashboardData?.reports || [];
+    const projects = dashboardData?.projects || [];
+    const tasks = dashboardData?.tasks || [];
+
+    // Filter states
     const [activeTab, setActiveTab] = useState<'OVERVIEW' | 'PROJECT_BOARD' | 'REPORTS' | 'USERS' | 'MONTHLY_REPORT'>('OVERVIEW');
     const [searchTerm, setSearchTerm] = useState('');
 
@@ -34,7 +51,6 @@ const AdminDashboard: React.FC = () => {
     const [monthlyReportEndDate, setMonthlyReportEndDate] = useState('');
 
     useEffect(() => {
-        refreshData();
         const end = new Date();
         const start = new Date();
         start.setDate(start.getDate() - 30);
@@ -51,23 +67,6 @@ const AdminDashboard: React.FC = () => {
         setMonthlyReportEndDate(lastDay.toISOString().split('T')[0]);
 
     }, []);
-
-    const refreshData = async () => {
-        try {
-            const [allUsers, allReports, allProjects, allTasks] = await Promise.all([
-                usersApi.getAll(),
-                reportsApi.getAll(),
-                projectsApi.getAll(),
-                tasksApi.getAll()
-            ]);
-            setUsers(allUsers);
-            setReports(allReports);
-            setProjects(allProjects);
-            setTasks(allTasks);
-        } catch (error) {
-            console.error("Failed to refresh data:", error);
-        }
-    };
 
     // User Mgmt
     const handleEditUser = (user: User) => {

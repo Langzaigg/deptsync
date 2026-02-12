@@ -11,6 +11,7 @@ import {
 import { Project, TimelineEvent, User, TaskAssignment, Attachment, UserRole } from '../../types';
 import { projectsApi, eventsApi, usersApi, tasksApi, reportsApi, llmApi, filesApi } from '../../services/api';
 import { useAuth } from '../../App';
+import { useFetchWithCache } from '../../hooks/useFetchWithCache';
 import { getBeijingISOString, formatToBeijingTime, formatBeijingDate, getBeijingTime } from '../../utils/timeUtils';
 
 interface PendingAttachment {
@@ -95,11 +96,39 @@ const ProjectDetail: React.FC = () => {
     onConfirm: () => void;
   }>({ isOpen: false, title: '', message: '', onConfirm: () => { } });
 
+  // Data Fetching Hook
+  const { data: cachedData, loading: hookLoading, refetch: refreshData } = useFetchWithCache(
+    `project_detail_${id || ''}`,
+    async () => {
+      if (!id) return null;
+      const [proj, projEvents, projTasks, allUsers, allProjects] = await Promise.all([
+        projectsApi.getById(id),
+        eventsApi.getByProject(id),
+        tasksApi.getAll(id),
+        usersApi.getAll(),
+        projectsApi.getAll()
+      ]);
+      return { proj, projEvents, projTasks, allUsers, allProjects };
+    },
+    [id]
+  );
+
   useEffect(() => {
-    if (id && user) {
-      loadProjectData();
+    if (cachedData) {
+      setProject(cachedData.proj);
+      setEvents(cachedData.projEvents);
+      setTasks(cachedData.projTasks);
+      setUsers(cachedData.allUsers);
+      const customers = Array.from(new Set(cachedData.allProjects.map((p: Project) => p.customerName).filter(Boolean) as string[]));
+      setExistingCustomers(customers);
     }
-  }, [id, user]);
+  }, [cachedData]);
+
+  useEffect(() => {
+    // If we have data, we're not "loading" in the blocking sense
+    // If hook is loading and we have no data, then we are loading
+    setLoading(hookLoading && !project);
+  }, [hookLoading, project]);
 
   useEffect(() => {
     const end = getBeijingTime();
@@ -121,32 +150,8 @@ const ProjectDetail: React.FC = () => {
     setFolders(sortedFolders);
   }, [events]);
 
-  const loadProjectData = async () => {
-    if (!id) return;
-    setLoading(true);
-    try {
-      const [proj, projEvents, projTasks, allUsers, allProjects] = await Promise.all([
-        projectsApi.getById(id),
-        eventsApi.getByProject(id),
-        tasksApi.getAll(id),
-        usersApi.getAll(),
-        projectsApi.getAll()
-      ]);
-
-      setProject(proj);
-      setEvents(projEvents);
-      setTasks(projTasks);
-      setUsers(allUsers);
-
-      // Extract unique customer names
-      const customers = Array.from(new Set(allProjects.map((p: Project) => p.customerName).filter(Boolean) as string[]));
-      setExistingCustomers(customers);
-    } catch (error) {
-      console.error("Failed to load project:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
+  // Helper for manual refresh if needed (though local updates handle most cases)
+  const loadProjectData = refreshData;
 
   const toggleFolder = (folder: string) => {
     if (expandedFolders.includes(folder)) {

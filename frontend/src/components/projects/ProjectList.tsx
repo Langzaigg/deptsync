@@ -4,15 +4,12 @@ import { Plus, Calendar, User as UserIcon, ArrowRight, Search, Filter, Clipboard
 import { Project, UserRole } from '../../types';
 import { projectsApi } from '../../services/api';
 import { useAuth } from '../../App';
+import { useFetchWithCache } from '../../hooks/useFetchWithCache';
 
 const ProjectList: React.FC = () => {
   const { user } = useAuth();
-  const [projects, setProjects] = useState<Project[]>([]);
   const [showModal, setShowModal] = useState(false);
   const [activeTab, setActiveTab] = useState<'PRE' | 'FORMAL' | 'ARCHIVED'>('PRE');
-
-  // Existing customers for autocomplete
-  const [existingCustomers, setExistingCustomers] = useState<string[]>([]);
 
   const [newProject, setNewProject] = useState({
     title: '',
@@ -30,22 +27,14 @@ const ProjectList: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [businessFilter, setBusinessFilter] = useState<string>('ALL');
 
-  useEffect(() => {
-    loadProjects();
-  }, []);
+  // Data Fetching with Cache
+  const { data, loading, refetch: loadProjects } = useFetchWithCache<Project[]>('project_list', projectsApi.getAll);
+  const projects = data || [];
 
-  const loadProjects = async () => {
-    try {
-      const allProjects = await projectsApi.getAll();
-      setProjects(allProjects);
-
-      // Extract unique customer names
-      const customers = Array.from(new Set(allProjects.map(p => p.customerName).filter(Boolean) as string[]));
-      setExistingCustomers(customers);
-    } catch (error) {
-      console.error('Failed to load projects:', error);
-    }
-  };
+  // Existing customers for autocomplete (Derived)
+  const existingCustomers = React.useMemo(() => {
+    return Array.from(new Set(projects.map(p => p.customerName).filter(Boolean) as string[]));
+  }, [projects]);
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();

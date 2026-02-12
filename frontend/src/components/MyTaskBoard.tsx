@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { tasksApi, projectsApi } from '../services/api';
 import { TaskAssignment, Project } from '../types';
 import { useAuth } from '../App';
+import { useFetchWithCache } from '../hooks/useFetchWithCache';
 import { Calendar, AlertCircle, CheckCircle2, PlayCircle, Clock, ArrowUpCircle, Flame } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
@@ -9,30 +10,22 @@ import { getBeijingISOString } from '../utils/timeUtils';
 
 const MyTaskBoard: React.FC = () => {
     const { user } = useAuth();
-    const [tasks, setTasks] = useState<TaskAssignment[]>([]);
-    const [projects, setProjects] = useState<Project[]>([]);
     const [editingProgress, setEditingProgress] = useState<{ id: string, progress: number, remark: string } | null>(null);
 
-    useEffect(() => {
-        if (user) {
-            refreshData();
-        }
-    }, [user]);
-
-    const refreshData = async () => {
-        if (!user) return;
-        try {
+    const { data: boardData, loading, refetch: refreshData } = useFetchWithCache(
+        'my_task_board_data',
+        async () => {
             const [allTasks, allProjects] = await Promise.all([
                 tasksApi.getAll(),
                 projectsApi.getAll()
             ]);
-            const myTasks = allTasks.filter(t => t.assigneeIds.includes(user.id));
-            setTasks(myTasks);
-            setProjects(allProjects);
-        } catch (error) {
-            console.error('Failed to load data:', error);
+            return { allTasks, allProjects };
         }
-    };
+    );
+
+    const allTasks = boardData?.allTasks || [];
+    const projects = boardData?.allProjects || [];
+    const tasks = user ? allTasks.filter(t => t.assigneeIds.includes(user.id)) : [];
 
     const getProject = (id: string) => projects.find(p => p.id === id);
 

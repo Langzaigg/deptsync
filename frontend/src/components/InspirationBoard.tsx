@@ -4,6 +4,7 @@ import { Plus, Tag, Search, Filter, Edit2, Check, Loader2 } from 'lucide-react';
 import { Inspiration } from '../types';
 import { inspirationsApi } from '../services/api';
 import { useAuth } from '../App';
+import { useFetchWithCache } from '../hooks/useFetchWithCache';
 
 const colors = [
   'bg-yellow-200 text-yellow-900',
@@ -16,10 +17,11 @@ const colors = [
 
 const InspirationBoard: React.FC = () => {
   const { user } = useAuth();
-  const [inspirations, setInspirations] = useState<Inspiration[]>([]);
+  const { data, loading, refetch: refreshData } = useFetchWithCache<Inspiration[]>('inspiration_board', inspirationsApi.getAll);
+  const inspirations = data || [];
+
   const [filteredInspirations, setFilteredInspirations] = useState<Inspiration[]>([]);
   const [showModal, setShowModal] = useState(false);
-  const [loading, setLoading] = useState(true);
 
   // Edit State
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -28,22 +30,6 @@ const InspirationBoard: React.FC = () => {
   // Filter states
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedTag, setSelectedTag] = useState('');
-
-  useEffect(() => {
-    refreshData();
-  }, []);
-
-  const refreshData = async () => {
-    setLoading(true);
-    try {
-      const data = await inspirationsApi.getAll();
-      setInspirations(data);
-    } catch (error) {
-      console.error("Failed to load inspirations:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   useEffect(() => {
     const results = inspirations.filter(note => {

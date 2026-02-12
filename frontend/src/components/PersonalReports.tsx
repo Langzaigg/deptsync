@@ -4,6 +4,7 @@ import { Plus, FileText, Sparkles, Check, Loader2, Download, Briefcase, RefreshC
 import { WeeklyReport, Project, Inspiration, WeeklyReportItem, Attachment } from '../types';
 import { reportsApi, projectsApi, eventsApi, inspirationsApi, tasksApi, llmApi, filesApi } from '../services/api';
 import { useAuth } from '../App';
+import { useFetchWithCache } from '../hooks/useFetchWithCache';
 import { getBeijingISOString, formatToBeijingTime, formatBeijingDate } from '../utils/timeUtils';
 
 interface PendingAttachment {
@@ -36,29 +37,32 @@ const PersonalReports: React.FC = () => {
 
   const [isGenerating, setIsGenerating] = useState(false);
 
-  useEffect(() => {
-    if (user) {
-      loadData();
-    }
-  }, [user]);
-
-  const loadData = async () => {
-    if (!user) return;
-    try {
+  // Data Fetching Hook
+  const { data: cachedData, loading, refetch: refreshData } = useFetchWithCache(
+    `personal_reports_${user?.id || ''}`,
+    async () => {
+      if (!user) return null;
       const [userReports, allProjects, allInspirations] = await Promise.all([
         reportsApi.getAll(user.id),
         projectsApi.getAll(),
         inspirationsApi.getAll()
       ]);
-      setReports(userReports);
+      return { userReports, allProjects, allInspirations };
+    },
+    [user?.id]
+  );
+
+  useEffect(() => {
+    if (cachedData && user) {
+      setReports(cachedData.userReports);
       // Only show projects where user is a member
-      const myProjects = allProjects.filter(p => p.members && p.members.includes(user.id));
+      const myProjects = cachedData.allProjects.filter((p: Project) => p.members && p.members.includes(user.id));
       setAvailableProjects(myProjects);
-      setAvailableInspirations(allInspirations);
-    } catch (error) {
-      console.error('Failed to load data:', error);
+      setAvailableInspirations(cachedData.allInspirations);
     }
-  };
+  }, [cachedData, user]);
+
+  const loadData = refreshData;
 
   const toggleProject = (id: string) => {
     if (selectedProjectIds.includes(id)) {
